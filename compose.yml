@@ -1,0 +1,66 @@
+version: "3.8"
+services:
+  payroll-api:
+    build:
+      context: .
+    container_name: payroll-api
+    depends_on:
+      - redis
+    ports:
+      - "8081:8080"
+    environment:
+      SPRING_DATASOURCE_URL: ${DB_URL}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASS}
+    networks:
+      - go_networks
+
+  redis:
+    image: redis:6.0.7
+    container_name: redis
+    restart: always
+    volumes:
+      - redis_volume_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      go_networks:
+        aliases:
+          - redis-local
+
+  redis_insight:
+    image: redislabs/redisinsight:1.14.0
+    container_name: redis_insight
+    restart: always
+    ports:
+      - "8001:8001"
+    volumes:
+      - redis_insight_volume_data:/db
+    depends_on:
+      - redis
+    networks:
+      - go_networks
+
+  storage:
+    image: minio/minio:latest
+    container_name: minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: "@Password123!"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - storage:/data
+    networks:
+      - go_networks
+
+volumes:
+  redis_volume_data:
+  redis_insight_volume_data:
+  storage:
+
+networks:
+  go_networks:
+    driver: bridge
