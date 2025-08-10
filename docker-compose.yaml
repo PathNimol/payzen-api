@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  # Database
+  postgres:
+    image: postgres:16
+    container_name: payzen-db
+    volumes:
+      - payzen-db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: 151003
+      POSTGRES_USER: postgres
+      POSTGRES_DB: payzen_db
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - payzen-network
+
+  # API
+  payzen-api:
+    build:
+      context: .
+    container_name: payzen-api
+    ports:
+      - "8081:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - payzen-network
+
+volumes:
+  payzen-db-data:
+
+networks:
+  payzen-network:
+    name: payzen-network
